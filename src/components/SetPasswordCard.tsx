@@ -31,9 +31,6 @@ export function SetPasswordCard({ title, invite }: { title: string; invite?: boo
     if (pw !== pw2) return toast.error("As senhas não conferem.");
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password: pw });
-    if (!error && invite) {
-      // mark acceptance timestamp (best effort; RLS only allows own row read)
-    }
     setLoading(false);
     if (error) return toast.error("Não foi possível salvar a senha. " + (error.message.includes("different") ? "Escolha uma senha diferente da anterior." : ""));
     toast.success("Senha salva!");

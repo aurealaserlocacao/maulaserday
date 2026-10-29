@@ -9,7 +9,7 @@ import { WhatsMenu } from "@/components/WhatsMenu";
 import { AppointmentForm } from "@/components/AppointmentForm";
 import { AppointmentSheet } from "@/components/AppointmentSheet";
 import { EmptyState } from "@/components/AppShell";
-import { ClientDialog } from "./app.clientes";
+import { ClientDialog } from "@/components/ClientDialog";
 import { useClinic } from "@/lib/session";
 import { formatDate, formatPhone, formatTime } from "@/lib/format";
 
