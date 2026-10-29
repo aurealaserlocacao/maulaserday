@@ -355,6 +355,88 @@ export type Database = {
         }
         Relationships: []
       }
+      expense_categories: {
+        Row: {
+          clinic_id: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_categories_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expenses: {
+        Row: {
+          amount: number
+          archived_at: string | null
+          category: string
+          clinic_id: string
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          method: Database["public"]["Enums"]["payment_method"] | null
+          notes: string | null
+          spent_on: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          archived_at?: string | null
+          category: string
+          clinic_id: string
+          created_at?: string
+          created_by?: string | null
+          description: string
+          id?: string
+          method?: Database["public"]["Enums"]["payment_method"] | null
+          notes?: string | null
+          spent_on?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          archived_at?: string | null
+          category?: string
+          clinic_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          method?: Database["public"]["Enums"]["payment_method"] | null
+          notes?: string | null
+          spent_on?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_templates: {
         Row: {
           body: string
@@ -383,6 +465,89 @@ export type Database = {
             columns: ["clinic_id"]
             isOneToOne: false
             referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          appointment_id: string | null
+          client_id: string | null
+          clinic_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_no_show_fee: boolean
+          kind: Database["public"]["Enums"]["payment_kind"]
+          method: Database["public"]["Enums"]["payment_method"]
+          notes: string | null
+          paid_on: string
+          refund_of: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          appointment_id?: string | null
+          client_id?: string | null
+          clinic_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_no_show_fee?: boolean
+          kind?: Database["public"]["Enums"]["payment_kind"]
+          method?: Database["public"]["Enums"]["payment_method"]
+          notes?: string | null
+          paid_on?: string
+          refund_of?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          appointment_id?: string | null
+          client_id?: string | null
+          clinic_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_no_show_fee?: boolean
+          kind?: Database["public"]["Enums"]["payment_kind"]
+          method?: Database["public"]["Enums"]["payment_method"]
+          notes?: string | null
+          paid_on?: string
+          refund_of?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_refund_of_fkey"
+            columns: ["refund_of"]
+            isOneToOne: false
+            referencedRelation: "payments"
             referencedColumns: ["id"]
           },
         ]
@@ -485,6 +650,10 @@ export type Database = {
         Args: { _clinic: string; _reason: string }
         Returns: undefined
       }
+      compute_fin_status: {
+        Args: { _appt: string; _final: number }
+        Returns: Database["public"]["Enums"]["financial_status"]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -516,6 +685,7 @@ export type Database = {
       clinic_access_status: "active" | "suspended"
       financial_status: "pending" | "partial" | "paid" | "refunded"
       membership_role: "owner" | "staff"
+      payment_kind: "receipt" | "refund"
       payment_method: "pix" | "cash" | "card" | "transfer" | "other"
       rental_status: "active" | "ended" | "pending"
     }
@@ -657,6 +827,7 @@ export const Constants = {
       clinic_access_status: ["active", "suspended"],
       financial_status: ["pending", "partial", "paid", "refunded"],
       membership_role: ["owner", "staff"],
+      payment_kind: ["receipt", "refund"],
       payment_method: ["pix", "cash", "card", "transfer", "other"],
       rental_status: ["active", "ended", "pending"],
     },
