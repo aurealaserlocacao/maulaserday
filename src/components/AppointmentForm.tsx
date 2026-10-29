@@ -29,7 +29,7 @@ export function AppointmentForm({ open, onOpenChange, initial, defaultDate, defa
   open: boolean;
   onOpenChange: (o: boolean) => void;
   initial?: ApptEditable | null;
-  defaultDate?: string;
+  defaultDate?: string | undefined;
   defaultClientId?: string;
 }) {
   const clinic = useClinic();

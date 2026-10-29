@@ -1,8 +1,8 @@
 # Laser Day Pro — Roadmap
 
 - [x] Fase 1 — Plano técnico
-- [ ] Fase 2 — Fundação (Cloud, auth, convites, papéis, RLS, layout, admin inicial)
-- [ ] Fase 3 — Operação (clientes, agenda, agendamentos, status, histórico, WhatsApp)
+- [x] Fase 2 — Fundação (Cloud, auth, convites, papéis, RLS, layout, admin inicial)
+- [x] Fase 3 — Operação (clientes, agenda, agendamentos, status, histórico, WhatsApp)
 - [ ] Fase 4 — Financeiro
 - [ ] Fase 5 — Documentos e aceite
 - [ ] Fase 6 — Revisão e testes

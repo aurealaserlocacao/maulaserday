@@ -33,7 +33,7 @@ export function AppShell({ title, subtitle, nav, children }: { title: string; su
             <Link
               key={n.to}
               to={n.to as any}
-              activeOptions={{ exact: n.exact }}
+              activeOptions={{ exact: !!n.exact }}
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent"
               activeProps={{ className: "bg-sidebar-accent font-semibold text-sidebar-accent-foreground" }}
             >
@@ -61,7 +61,7 @@ export function AppShell({ title, subtitle, nav, children }: { title: string; su
           <Link
             key={n.to}
             to={n.to as any}
-            activeOptions={{ exact: n.exact }}
+            activeOptions={{ exact: !!n.exact }}
             className="flex flex-col items-center gap-0.5 py-2 text-[11px] text-muted-foreground"
             activeProps={{ className: "text-primary font-semibold" }}
           >
