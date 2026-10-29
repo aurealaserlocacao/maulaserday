@@ -25,8 +25,8 @@ function tzOffsetMin(date: Date, tz: string) {
 
 /** Convert a local wall-clock date ("2026-10-28") + time ("14:30") in tz to an ISO instant. */
 export function zonedToISO(date: string, time: string, tz = DEFAULT_TZ) {
-  const [y, m, d] = date.split("-").map(Number);
-  const [hh, mm] = time.split(":").map(Number);
+  const [y, m, d] = date.split("-").map(Number) as [number, number, number];
+  const [hh, mm] = time.split(":").map(Number) as [number, number];
   const guess = new Date(Date.UTC(y, m - 1, d, hh, mm));
   const off = tzOffsetMin(guess, tz);
   return new Date(guess.getTime() - off * 60000).toISOString();
@@ -44,7 +44,7 @@ export function todayInTz(tz = DEFAULT_TZ) {
   return isoDateInTz(new Date(), tz);
 }
 export function addDays(date: string, n: number) {
-  const [y, m, d] = date.split("-").map(Number);
+  const [y, m, d] = date.split("-").map(Number) as [number, number, number];
   const dt = new Date(Date.UTC(y, m - 1, d + n));
   return dt.toISOString().slice(0, 10);
 }
@@ -53,16 +53,16 @@ export function dayRange(date: string, tz = DEFAULT_TZ) {
   return { from: zonedToISO(date, "00:00", tz), to: zonedToISO(addDays(date, 1), "00:00", tz) };
 }
 export function weekStart(date: string) {
-  const [y, m, d] = date.split("-").map(Number);
+  const [y, m, d] = date.split("-").map(Number) as [number, number, number];
   const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 = domingo
   return addDays(date, -((dow + 6) % 7)); // segunda
 }
 export function formatDayLabel(date: string) {
-  const [y, m, d] = date.split("-").map(Number);
+  const [y, m, d] = date.split("-").map(Number) as [number, number, number];
   return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC", weekday: "long", day: "2-digit", month: "long" }).format(new Date(Date.UTC(y, m - 1, d)));
 }
 export function addMinutesToTime(time: string, mins: number) {
-  const [h, m] = time.split(":").map(Number);
+  const [h, m] = time.split(":").map(Number) as [number, number];
   const t = (h * 60 + m + mins) % (24 * 60);
   return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
 }
