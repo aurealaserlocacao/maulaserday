@@ -182,6 +182,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/_authenticated/admin/clinicas': typeof AuthenticatedAdminClinicasRouteWithChildren
   '/_authenticated/app/agenda': typeof AuthenticatedAppAgendaRoute
+  '/_authenticated/app/visao-geral': typeof AuthenticatedAppVisaoGeralRoute
   '/_authenticated/app/clientes': typeof AuthenticatedAppClientesRouteWithChildren
   '/_authenticated/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/_authenticated/app/financeiro': typeof AuthenticatedAppFinanceiroRoute
