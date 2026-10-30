@@ -16,4 +16,10 @@ export const AUDIT_LABEL: Record<string, string> = {
   "appointment.status.completed": "Atendimento concluído",
   "appointment.status.in_progress": "Atendimento iniciado",
   "appointment.status.pending": "Voltou para aguardando",
+  "payment.created": "Pagamento registrado",
+  "payment.refunded": "Estorno registrado",
+  "payment.updated": "Pagamento editado",
+  "expense.created": "Despesa registrada",
+  "expense.updated": "Despesa editada",
+  "expense.removed": "Despesa removida",
 };
