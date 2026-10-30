@@ -257,3 +257,96 @@ export const adminFinanceSummary = createServerFn({ method: "POST" })
     }, empty());
     return { from, through: today, total, clinics };
   });
+
+
+/**
+ * Admin view of Laser Day financials grouped by the clinic-local event date.
+ * A later receipt/refund changes the same event row; the event date remains appointment.starts_at.
+ */
+export const adminLaserDayEvents = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ clinicId: z.string().uuid().optional() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context as Ctx);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    let clinicsQuery = supabaseAdmin.from("clinics").select("id, name, timezone");
+    let appointmentsQuery = supabaseAdmin
+      .from("appointments")
+      .select("id, clinic_id, starts_at, expected_amount, final_amount, status")
+      .not("status", "in", "(cancelled,no_show)")
+      .order("starts_at", { ascending: false });
+    if (data.clinicId) {
+      clinicsQuery = clinicsQuery.eq("id", data.clinicId);
+      appointmentsQuery = appointmentsQuery.eq("clinic_id", data.clinicId);
+    }
+
+    const [clinicsRes, appointmentsRes] = await Promise.all([clinicsQuery, appointmentsQuery]);
+    if (clinicsRes.error || appointmentsRes.error) throw new Error("Não foi possível carregar os Laser Days.");
+
+    const clinicById: Record<string, { name: string; timezone: string }> = {};
+    (clinicsRes.data ?? []).forEach((clinic: any) => {
+      clinicById[clinic.id] = { name: clinic.name, timezone: clinic.timezone || "America/Sao_Paulo" };
+    });
+    const appointments = (appointmentsRes.data ?? []).filter((appointment: any) => clinicById[appointment.clinic_id]);
+    const appointmentIds = appointments.map((appointment: any) => appointment.id);
+    const paymentRows: any[] = [];
+
+    // Paginate to avoid silently omitting older appointments or their linked payments.
+    for (let offset = 0; offset < appointmentIds.length; offset += 500) {
+      const ids = appointmentIds.slice(offset, offset + 500);
+      const { data: batch, error } = await supabaseAdmin
+        .from("payments")
+        .select("appointment_id, kind, amount")
+        .in("appointment_id", ids);
+      if (error) throw new Error("Não foi possível carregar os pagamentos dos Laser Days.");
+      paymentRows.push(...(batch ?? []));
+    }
+
+    const netByAppointment: Record<string, number> = {};
+    paymentRows.forEach((payment: any) => {
+      netByAppointment[payment.appointment_id] =
+        (netByAppointment[payment.appointment_id] ?? 0) +
+        (payment.kind === "refund" ? -1 : 1) * (Number(payment.amount) || 0);
+    });
+
+    const eventByKey: Record<string, any> = {};
+    appointments.forEach((appointment: any) => {
+      const clinic = clinicById[appointment.clinic_id];
+      const eventDate = new Intl.DateTimeFormat("en-CA", {
+        timeZone: clinic.timezone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(new Date(appointment.starts_at));
+      const key = appointment.clinic_id + ":" + eventDate;
+      if (!eventByKey[key]) {
+        eventByKey[key] = {
+          clinicId: appointment.clinic_id,
+          clinicName: clinic.name,
+          date: eventDate,
+          appointmentCount: 0,
+          revenue: 0,
+          netReceived: 0,
+          outstanding: 0,
+        };
+      }
+      const event = eventByKey[key];
+      const revenueBase = appointment.final_amount ?? appointment.expected_amount;
+      const revenue = revenueBase == null ? 0 : Math.max(0, Number(revenueBase) || 0);
+      const received = netByAppointment[appointment.id] ?? 0;
+      event.appointmentCount += 1;
+      event.revenue += revenue;
+      event.netReceived += received;
+      event.outstanding += Math.max(0, revenue - received);
+    });
+
+    return Object.values(eventByKey)
+      .map((event: any) => ({
+        ...event,
+        revenue: Math.round(event.revenue * 100) / 100,
+        netReceived: Math.round(event.netReceived * 100) / 100,
+        outstanding: Math.round(event.outstanding * 100) / 100,
+      }))
+      .sort((a: any, b: any) => b.date.localeCompare(a.date) || a.clinicName.localeCompare(b.clinicName));
+  });
