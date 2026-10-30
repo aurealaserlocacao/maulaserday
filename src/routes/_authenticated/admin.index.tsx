@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
-import { adminStats, adminFinanceSummary } from "@/lib/admin.functions";
+import { adminStats, adminFinanceSummary, adminLaserDayEvents } from "@/lib/admin.functions";
 import { AUDIT_LABEL } from "@/lib/audit-labels";
 import { formatBRL, formatDate, formatDateTime } from "@/lib/format";
 
@@ -15,6 +15,8 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 function AdminDash() {
   const statsFn = useServerFn(adminStats);
   const financeFn = useServerFn(adminFinanceSummary);
+  const laserDaysFn = useServerFn(adminLaserDayEvents);
+  const { data: laserDays } = useQuery({ queryKey: ["admin-laser-day-events"], queryFn: () => laserDaysFn({ data: {} }) });
   const { data: finance } = useQuery({ queryKey: ["admin-finance-summary"], queryFn: () => financeFn({ data: {} }) });
   const { data: s } = useQuery({ queryKey: ["admin-stats"], queryFn: () => statsFn() });
   const { data: expiring } = useQuery({
@@ -75,7 +77,29 @@ function AdminDash() {
           </table>
         </div>
       </section>
-      <div className="mt-8 grid gap-6 md:grid-cols-2">
+      <section className="mt-6">
+        <h2 className="mb-3 text-xl">Faturamento por Laser Day</h2>
+        <p className="mb-3 text-xs text-muted-foreground">Cada linha é um evento por clínica. Os recebimentos atualizam os valores sem alterar a data original do Laser Day.</p>
+        <div className="overflow-x-auto rounded-2xl border bg-card">
+          <table className="w-full text-sm">
+            <thead className="border-b bg-muted/40 text-left"><tr><th className="px-3 py-2">Data</th><th className="px-3 py-2">Clínica</th><th className="px-3 py-2 text-right">Atendimentos</th><th className="px-3 py-2 text-right">Faturamento</th><th className="px-3 py-2 text-right">Recebido líquido</th><th className="px-3 py-2 text-right">Pendente</th></tr></thead>
+            <tbody className="divide-y">
+              {laserDays?.map((event) => (
+                <tr key={event.clinicId + event.date}>
+                  <td className="px-3 py-2 whitespace-nowrap">{formatDate(event.date + "T12:00:00Z")}</td>
+                  <td className="px-3 py-2"><Link to="/admin/clinicas/$id" params={{ id: event.clinicId }} className="font-medium hover:underline">{event.clinicName}</Link></td>
+                  <td className="px-3 py-2 text-right tabular-nums">{event.appointmentCount}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{formatBRL(event.revenue)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{formatBRL(event.netReceived)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{formatBRL(event.outstanding)}</td>
+                </tr>
+              ))}
+              {laserDays?.length === 0 && <tr><td colSpan={6} className="px-3 py-3 text-muted-foreground">Nenhum Laser Day cadastrado.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <div className="mt-8 grid gap-6 md:grid-cols-2>
         <section>
           <h2 className="mb-3 text-xl">Locações vencendo (30 dias)</h2>
           <div className="divide-y rounded-2xl border bg-card">
