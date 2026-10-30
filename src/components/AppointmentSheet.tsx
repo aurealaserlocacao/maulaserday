@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { StatusBadge } from "./StatusBadge";
 import { WhatsMenu } from "./WhatsMenu";
 import { AppointmentForm } from "./AppointmentForm";
+import { PaymentsPanel } from "./PaymentsPanel";
 import { FIN_LABEL, STATUS_LABEL, TRANSITIONS, friendlyDbError, type ApptStatus } from "@/lib/appointments";
 import { formatBRL, formatDate, formatDateTime, formatPhone, formatTime } from "@/lib/format";
 import { useClinic } from "@/lib/session";
@@ -33,6 +34,9 @@ const EVENT_LABEL: Record<string, string> = {
   rescheduled: "Horário alterado",
   final_amount: "Valor final alterado",
   areas: "Áreas atualizadas",
+  payment_receipt: "Pagamento registrado",
+  payment_refund: "Estorno registrado",
+  payment_edit: "Pagamento editado",
 };
 
 export function AppointmentSheet({ id, onOpenChange }: { id: string | null; onOpenChange: (o: boolean) => void }) {
@@ -153,8 +157,9 @@ export function AppointmentSheet({ id, onOpenChange }: { id: string | null; onOp
                 <Textarea id="sn" rows={3} value={sessionNotes} onChange={(e) => setSessionNotes(e.target.value)} />
               </div>
               <Button size="sm" onClick={saveSession} disabled={busy}>Salvar atendimento</Button>
-              <p className="text-xs text-muted-foreground">Registro de pagamentos chega na próxima etapa (Financeiro).</p>
             </div>
+
+            <PaymentsPanel appointmentId={a.id} finalAmount={a.final_amount != null ? Number(a.final_amount) : null} isNoShow={a.status === "no_show"} />
 
             <div>
               <p className="mb-2 text-sm font-semibold">Histórico</p>
@@ -166,6 +171,7 @@ export function AppointmentSheet({ id, onOpenChange }: { id: string | null; onOp
                       <p>{EVENT_LABEL[e.kind] ?? e.kind}
                         {e.kind === "status" && `: ${STATUS_LABEL[d.from as ApptStatus]} → ${STATUS_LABEL[d.to as ApptStatus]}`}
                         {e.kind === "rescheduled" && `: ${formatDateTime(d.from, tz)} → ${formatDateTime(d.to, tz)}`}
+                        {(e.kind === "payment_receipt" || e.kind === "payment_refund") && `: ${formatBRL(d.amount)}`}
                         {e.kind === "final_amount" && `: ${d.from != null ? formatBRL(d.from) : "—"} → ${d.to != null ? formatBRL(d.to) : "—"}`}
                       </p>
                       <p className="text-xs text-muted-foreground">{formatDateTime(e.created_at, tz)}</p>
