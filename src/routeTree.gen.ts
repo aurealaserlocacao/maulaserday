@@ -22,6 +22,7 @@ import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminClinicasRouteImport } from './routes/_authenticated/admin.clinicas'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
 import { Route as AuthenticatedAppAgendaRouteImport } from './routes/_authenticated/app.agenda'
+import { Route as AuthenticatedAppVisaoGeralRouteImport } from './routes/_authenticated/app.visao-geral'
 import { Route as AuthenticatedAppClientesRouteImport } from './routes/_authenticated/app.clientes'
 import { Route as AuthenticatedAppConfiguracoesRouteImport } from './routes/_authenticated/app.configuracoes'
 import { Route as AuthenticatedAppFinanceiroRouteImport } from './routes/_authenticated/app.financeiro'
@@ -89,6 +90,11 @@ const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppVisaoGeralRoute = AuthenticatedAppVisaoGeralRouteImport.update({
+  id: '/visao-geral',
+  path: '/visao-geral',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppAgendaRoute = AuthenticatedAppAgendaRouteImport.update({
   id: '/agenda',
   path: '/agenda',
@@ -136,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/clinicas': typeof AuthenticatedAdminClinicasRouteWithChildren
   '/app/agenda': typeof AuthenticatedAppAgendaRoute
+  '/app/visao-geral': typeof AuthenticatedAppVisaoGeralRoute
   '/app/clientes': typeof AuthenticatedAppClientesRouteWithChildren
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/app/financeiro': typeof AuthenticatedAppFinanceiroRoute
@@ -153,6 +160,7 @@ export interface FileRoutesByTo {
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/clinicas': typeof AuthenticatedAdminClinicasRouteWithChildren
   '/app/agenda': typeof AuthenticatedAppAgendaRoute
+  '/app/visao-geral': typeof AuthenticatedAppVisaoGeralRoute
   '/app/clientes': typeof AuthenticatedAppClientesRouteWithChildren
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/app/financeiro': typeof AuthenticatedAppFinanceiroRoute
@@ -195,6 +203,7 @@ export interface FileRouteTypes {
     | '/admin/auditoria'
     | '/admin/clinicas'
     | '/app/agenda'
+    | '/app/visao-geral'
     | '/app/clientes'
     | '/app/configuracoes'
     | '/app/financeiro'
@@ -212,6 +221,7 @@ export interface FileRouteTypes {
     | '/admin/auditoria'
     | '/admin/clinicas'
     | '/app/agenda'
+    | '/app/visao-geral'
     | '/app/clientes'
     | '/app/configuracoes'
     | '/app/financeiro'
@@ -232,6 +242,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/auditoria'
     | '/_authenticated/admin/clinicas'
     | '/_authenticated/app/agenda'
+    | '/_authenticated/app/visao-geral'
     | '/_authenticated/app/clientes'
     | '/_authenticated/app/configuracoes'
     | '/_authenticated/app/financeiro'
@@ -335,6 +346,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/visao-geral': {
+      id: '/_authenticated/app/visao-geral'
+      path: '/visao-geral'
+      fullPath: '/app/visao-geral'
+      preLoaderRoute: typeof AuthenticatedAppVisaoGeralRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/agenda': {
       id: '/_authenticated/app/agenda'
       path: '/agenda'
@@ -425,6 +443,7 @@ const AuthenticatedAppClientesRouteWithChildren =
 
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppAgendaRoute: typeof AuthenticatedAppAgendaRoute
+  AuthenticatedAppVisaoGeralRoute: typeof AuthenticatedAppVisaoGeralRoute
   AuthenticatedAppClientesRoute: typeof AuthenticatedAppClientesRouteWithChildren
   AuthenticatedAppConfiguracoesRoute: typeof AuthenticatedAppConfiguracoesRoute
   AuthenticatedAppFinanceiroRoute: typeof AuthenticatedAppFinanceiroRoute
@@ -433,6 +452,7 @@ interface AuthenticatedAppRouteChildren {
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppAgendaRoute: AuthenticatedAppAgendaRoute,
+  AuthenticatedAppVisaoGeralRoute: AuthenticatedAppVisaoGeralRoute,
   AuthenticatedAppClientesRoute: AuthenticatedAppClientesRouteWithChildren,
   AuthenticatedAppConfiguracoesRoute: AuthenticatedAppConfiguracoesRoute,
   AuthenticatedAppFinanceiroRoute: AuthenticatedAppFinanceiroRoute,
