@@ -170,3 +170,90 @@ export const adminStats = createServerFn({ method: "POST" })
       perClinic,
     };
   });
+
+
+/**
+ * Admin-only clinic operational finance for the last 30 days.
+ * Expected amounts are kept separate from actual receipts; refunds reduce net received.
+ */
+export const adminFinanceSummary = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ clinicId: z.string().uuid().optional() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context as Ctx);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const today = new Date().toISOString().slice(0, 10);
+    const from = new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10);
+    const fromTimestamp = `${from}T00:00:00.000Z`;
+    const untilTimestamp = new Date(Date.now() + 86400000).toISOString();
+
+    let clinicsQuery = supabaseAdmin.from("clinics").select("id, name");
+    let paymentsQuery = supabaseAdmin.from("payments").select("clinic_id, appointment_id, kind, amount, paid_on").gte("paid_on", from).lte("paid_on", today);
+    let expensesQuery = supabaseAdmin.from("expenses").select("clinic_id, amount, spent_on").is("archived_at", null).gte("spent_on", from).lte("spent_on", today);
+    let appointmentsQuery = supabaseAdmin.from("appointments").select("id, clinic_id, expected_amount, final_amount, financial_status, status").gte("starts_at", fromTimestamp).lt("starts_at", untilTimestamp);
+    if (data.clinicId) {
+      clinicsQuery = clinicsQuery.eq("id", data.clinicId);
+      paymentsQuery = paymentsQuery.eq("clinic_id", data.clinicId);
+      expensesQuery = expensesQuery.eq("clinic_id", data.clinicId);
+      appointmentsQuery = appointmentsQuery.eq("clinic_id", data.clinicId);
+    }
+
+    const [clinicsRes, paymentsRes, expensesRes, appointmentsRes] = await Promise.all([
+      clinicsQuery, paymentsQuery, expensesQuery, appointmentsQuery,
+    ]);
+    if (clinicsRes.error || paymentsRes.error || expensesRes.error || appointmentsRes.error) {
+      throw new Error("Não foi possível carregar os indicadores financeiros.");
+    }
+
+    const appointmentRows = (appointmentsRes.data ?? []).filter((a: any) => a.status !== "cancelled" && a.status !== "no_show");
+    const appointmentIds = appointmentRows.map((a: any) => a.id);
+    const appointmentPaymentsRes = appointmentIds.length
+      ? await supabaseAdmin.from("payments").select("appointment_id, kind, amount").in("appointment_id", appointmentIds)
+      : { data: [], error: null };
+    if (appointmentPaymentsRes.error) throw new Error("Não foi possível calcular os valores pendentes.");
+
+    const empty = () => ({ grossReceipts: 0, refunds: 0, netReceived: 0, expenses: 0, operatingBalance: 0, expectedOutstanding: 0, unpaidAppointments: 0 });
+    const byClinic: Record<string, ReturnType<typeof empty>> = {};
+    const clinicNames: Record<string, string> = {};
+    (clinicsRes.data ?? []).forEach((c: any) => { byClinic[c.id] = empty(); clinicNames[c.id] = c.name; });
+
+    (paymentsRes.data ?? []).forEach((p: any) => {
+      const m = byClinic[p.clinic_id];
+      if (!m) return;
+      const amount = Number(p.amount) || 0;
+      if (p.kind === "refund") m.refunds += amount;
+      else m.grossReceipts += amount;
+    });
+    (expensesRes.data ?? []).forEach((e: any) => {
+      if (byClinic[e.clinic_id]) byClinic[e.clinic_id].expenses += Number(e.amount) || 0;
+    });
+
+    const appointmentNet: Record<string, number> = {};
+    (appointmentPaymentsRes.data ?? []).forEach((p: any) => {
+      if (!p.appointment_id) return;
+      appointmentNet[p.appointment_id] = (appointmentNet[p.appointment_id] ?? 0) + (p.kind === "refund" ? -1 : 1) * (Number(p.amount) || 0);
+    });
+    appointmentRows.forEach((a: any) => {
+      const m = byClinic[a.clinic_id];
+      const dueBase = a.final_amount ?? a.expected_amount;
+      if (!m || dueBase == null || (a.financial_status !== "pending" && a.financial_status !== "partial")) return;
+      const due = Math.max(0, Number(dueBase) - (appointmentNet[a.id] ?? 0));
+      if (due > 0) {
+        m.expectedOutstanding += due;
+        m.unpaidAppointments += 1;
+      }
+    });
+
+    Object.values(byClinic).forEach((m) => {
+      m.netReceived = m.grossReceipts - m.refunds;
+      m.operatingBalance = m.netReceived - m.expenses;
+      Object.keys(m).forEach((key) => { (m as any)[key] = Math.round((m as any)[key] * 100) / 100; });
+    });
+    const clinics = Object.entries(byClinic).map(([id, metrics]) => ({ id, name: clinicNames[id], ...metrics }))
+      .sort((a, b) => b.netReceived - a.netReceived);
+    const total = clinics.reduce((acc, c) => {
+      Object.keys(acc).forEach((key) => { (acc as any)[key] += (c as any)[key]; });
+      return acc;
+    }, empty());
+    return { from, through: today, total, clinics };
+  });
