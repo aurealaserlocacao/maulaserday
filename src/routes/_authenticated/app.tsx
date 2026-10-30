@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { LayoutDashboard, CalendarDays, Users, Settings } from "lucide-react";
+import { LayoutDashboard, CalendarDays, Users, Settings, Wallet } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { meQuery, useClinic } from "@/lib/session";
 
@@ -15,6 +15,7 @@ const nav = [
   { to: "/app", label: "Painel", icon: LayoutDashboard, exact: true },
   { to: "/app/agenda", label: "Agenda", icon: CalendarDays },
   { to: "/app/clientes", label: "Clientes", icon: Users },
+  { to: "/app/financeiro", label: "Financeiro", icon: Wallet },
   { to: "/app/configuracoes", label: "Ajustes", icon: Settings },
 ];
 

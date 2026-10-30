@@ -9,7 +9,8 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { AppointmentForm } from "@/components/AppointmentForm";
 import { AppointmentSheet } from "@/components/AppointmentSheet";
 import { useClinic } from "@/lib/session";
-import { addDays, dayRange, formatDayLabel, formatTime, todayInTz } from "@/lib/format";
+import { addDays, dayRange, formatBRL, formatDayLabel, formatTime, todayInTz } from "@/lib/format";
+import { periodResult } from "@/lib/finance";
 
 export const Route = createFileRoute("/_authenticated/app/")({
   head: () => ({ meta: [{ title: "Painel — Laser Day Pro" }, { name: "description", content: "Resumo do dia da clínica." }] }),
@@ -38,7 +39,13 @@ function Dashboard() {
     queryFn: async () => {
       const { data } = await supabase.from("appointments").select("status").eq("clinic_id", clinic.id).gte("starts_at", from).lt("starts_at", to);
       const c = (s: string) => data?.filter((a) => a.status === s).length ?? 0;
-      return { total: data?.filter((a) => a.status !== "cancelled").length ?? 0, pending: c("pending"), confirmed: c("confirmed"), completed: c("completed"), noShow: c("no_show") };
+      const fromDay = addDays(today, -period);
+      const [p, e] = await Promise.all([
+        supabase.from("payments").select("kind, amount").eq("clinic_id", clinic.id).gte("paid_on", fromDay).lte("paid_on", today),
+        supabase.from("expenses").select("amount").eq("clinic_id", clinic.id).is("archived_at", null).gte("spent_on", fromDay).lte("spent_on", today),
+      ]);
+      const fin = periodResult((p.data ?? []) as any, e.data ?? []);
+      return { fin, total: data?.filter((a) => a.status !== "cancelled").length ?? 0, pending: c("pending"), confirmed: c("confirmed"), completed: c("completed"), noShow: c("no_show") };
     },
   });
 
@@ -74,7 +81,14 @@ function Dashboard() {
           </div>
         ))}
       </div>
-      <p className="mt-3 text-xs text-muted-foreground">Receitas, despesas e resultado aparecem aqui quando o módulo Financeiro for ativado.</p>
+      <div className="mt-3 grid grid-cols-3 gap-3">
+        {[{ l: "Recebido", v: stats?.fin.revenue }, { l: "Despesas", v: stats?.fin.spent }, { l: "Resultado", v: stats?.fin.result }].map((c) => (
+          <div key={c.l} className="rounded-2xl border bg-card p-4">
+            <p className="text-xs text-muted-foreground">{c.l}</p>
+            <p className="mt-1 font-display text-xl md:text-2xl">{c.v == null ? "–" : formatBRL(c.v)}</p>
+          </div>
+        ))}
+      </div>
 
       <h2 className="mb-3 mt-8 text-xl">Atendimentos de hoje</h2>
       {isLoading ? <p className="text-sm text-muted-foreground">Carregando…</p> : todayList?.length ? (

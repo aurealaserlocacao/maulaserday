@@ -11,7 +11,8 @@ import { AppointmentSheet } from "@/components/AppointmentSheet";
 import { EmptyState } from "@/components/AppShell";
 import { ClientDialog } from "@/components/ClientDialog";
 import { useClinic } from "@/lib/session";
-import { formatDate, formatPhone, formatTime } from "@/lib/format";
+import { formatBRL, formatDate, formatPhone, formatTime } from "@/lib/format";
+import { METHOD_LABEL } from "@/lib/finance";
 
 export const Route = createFileRoute("/_authenticated/app/clientes/$id")({
   head: () => ({ meta: [{ title: "Cliente — Laser Day Pro" }, { name: "description", content: "Histórico da cliente." }] }),
@@ -33,6 +34,11 @@ function ClientDetail() {
   const { data: appts } = useQuery({
     queryKey: ["client", id, "appointments"],
     queryFn: async () => (await supabase.from("appointments").select("id, starts_at, status, areas, areas_note, final_amount").eq("client_id", id).order("starts_at", { ascending: false })).data ?? [],
+  });
+
+  const { data: pays } = useQuery({
+    queryKey: ["client", id, "payments"],
+    queryFn: async () => (await supabase.from("payments").select("id, kind, amount, method, paid_on, is_no_show_fee").eq("client_id", id).order("paid_on", { ascending: false })).data ?? [],
   });
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Carregando…</p>;
@@ -75,7 +81,17 @@ function ClientDetail() {
           ))}
         </div>
       ) : <EmptyState title="Sem atendimentos ainda" />}
-      <p className="mt-4 text-xs text-muted-foreground">Pagamentos e termos aceitos aparecerão aqui nas próximas etapas.</p>
+      <h2 className="mb-3 mt-8 text-xl">Pagamentos</h2>
+      {pays?.length ? (
+        <div className="divide-y rounded-2xl border bg-card">
+          {pays.map((p) => (
+            <div key={p.id} className="flex justify-between px-4 py-3 text-sm">
+              <span>{formatDate(p.paid_on + "T12:00:00Z")} · {METHOD_LABEL[p.method]}{p.kind === "refund" && " · estorno"}{p.is_no_show_fee && " · taxa de falta"}</span>
+              <span className={p.kind === "refund" ? "text-destructive" : "font-semibold"}>{p.kind === "refund" ? "− " : ""}{formatBRL(Number(p.amount))}</span>
+            </div>
+          ))}
+        </div>
+      ) : <EmptyState title="Sem pagamentos registrados" />}
 
       <ClientDialog open={edit} onOpenChange={setEdit} initial={c} />
       <AppointmentForm open={newOpen} onOpenChange={setNewOpen} defaultClientId={c.id} />
