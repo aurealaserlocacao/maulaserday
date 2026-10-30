@@ -14,3 +14,8 @@
 - Admin role is `platform_admin` in `user_roles`, checked with `has_role`; privileged admin actions go through `src/lib/admin.functions.ts` server functions that verify the role before using the admin client. Why: no privilege escalation via profile edits.
 - Appointment conflicts are blocked by a Postgres EXCLUDE constraint plus a trigger for blocked times; status transitions are validated in the `appointment_before` trigger and mirrored in `src/lib/appointments.ts`. Why: safe under concurrent requests.
 - Times are stored as timestamptz and converted with helpers in `src/lib/format.ts` using the clinic timezone. Why: avoid date shifts.
+
+## Change log conventions for Lovable sync
+- Keep implementation in focused commits with Conventional Commit-style messages so Lovable sessions can identify the intent (for example, `feat(clinic-navigation): ...` or `feat(admin-finance): ...`).
+- Add a concise implementation note here or under `.lovable/plan/` when navigation, admin workflows, or database behavior changes.
+- Preserve existing routes and business data; avoid production migrations unless a schema change is necessary and documented.
