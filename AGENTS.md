@@ -19,3 +19,7 @@
 - Keep implementation in focused commits with Conventional Commit-style messages so Lovable sessions can identify the intent (for example, `feat(clinic-navigation): ...` or `feat(admin-finance): ...`).
 - Add a concise implementation note here or under `.lovable/plan/` when navigation, admin workflows, or database behavior changes.
 - Preserve existing routes and business data; avoid production migrations unless a schema change is necessary and documented.
+
+## Implementation notes
+- Clinic home/navigation: `/app` redirects to `/app/agenda`; the previous dashboard is available at `/app/visao-geral`.
+- Admin operational-finance indicators are documented in `.lovable/plan/2026-10-30-admin-finance-and-agenda.md`; preserve the server-side admin guard and the distinction between received and expected values.
