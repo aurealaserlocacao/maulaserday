@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { resendInvite, saveRental, setClinicAccess, updateClinicAdmin, adminStats, adminFinanceSummary } from "@/lib/admin.functions";
+import { resendInvite, saveRental, setClinicAccess, updateClinicAdmin, adminStats, adminFinanceSummary, adminLaserDayEvents } from "@/lib/admin.functions";
 import { AUDIT_LABEL } from "@/lib/audit-labels";
 import { formatBRL, formatDate, formatDateTime } from "@/lib/format";
 
@@ -29,7 +29,7 @@ function ClinicAdmin() {
   const updateFn = useServerFn(updateClinicAdmin);
   const rentalFn = useServerFn(saveRental);
   const statsFn = useServerFn(adminStats);
-  const financeFn = useServerFn(adminFinanceSummary);
+  const financeFn = useServerFn(adminFinanceSummary);\n  const laserDaysFn = useServerFn(adminLaserDayEvents);
   const [confirmSuspend, setConfirmSuspend] = useState(false);
 
   const { data: c } = useQuery({ queryKey: ["admin-clinic", id], queryFn: async () => (await supabase.from("clinics").select("*").eq("id", id).maybeSingle()).data });
@@ -37,7 +37,7 @@ function ClinicAdmin() {
   const { data: members } = useQuery({ queryKey: ["admin-members", id], queryFn: async () => (await supabase.from("clinic_memberships").select("id, role, active, invited_at, user_id").eq("clinic_id", id)).data ?? [] });
   const { data: logs } = useQuery({ queryKey: ["admin-clinic-logs", id], queryFn: async () => (await supabase.from("audit_logs").select("id, action, created_at").eq("clinic_id", id).order("created_at", { ascending: false }).limit(15)).data ?? [] });
   const { data: stats } = useQuery({ queryKey: ["admin-stats"], queryFn: () => statsFn() });
-  const { data: finance } = useQuery({ queryKey: ["admin-clinic-finance", id], queryFn: () => financeFn({ data: { clinicId: id } }) });
+  const { data: finance } = useQuery({ queryKey: ["admin-clinic-finance", id], queryFn: () => financeFn({ data: { clinicId: id } }) });\n  const { data: laserDays } = useQuery({ queryKey: ["admin-clinic-laser-days", id], queryFn: () => laserDaysFn({ data: { clinicId: id } }) });
 
   const [f, setF] = useState({ name: "", owner_name: "", phone: "", business_info: "", admin_notes: "" });
   useEffect(() => { if (c) setF({ name: c.name, owner_name: c.owner_name ?? "", phone: c.phone ?? "", business_info: c.business_info ?? "", admin_notes: c.admin_notes ?? "" }); }, [c]);
@@ -95,7 +95,7 @@ function ClinicAdmin() {
         <p className="mt-2 text-xs text-muted-foreground">Valores previstos são estimativas separadas dos recebimentos confirmados. Estornos reduzem o recebido líquido; despesas arquivadas não entram no saldo.</p>
       </section>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <section className="mb-6 rounded-2xl border bg-card p-5">\n        <h2 className="mb-3 text-lg">Faturamento por Laser Day</h2>\n        <p className="mb-3 text-xs text-muted-foreground">Cada data permanece como um evento próprio. Recebimentos e estornos ligados aos atendimentos atualizam os valores desta data.</p>\n        <div className="overflow-x-auto">\n          <table className="w-full text-sm">\n            <thead className="border-b bg-muted/40 text-left"><tr><th className="px-3 py-2">Data do Laser Day</th><th className="px-3 py-2 text-right">Atendimentos</th><th className="px-3 py-2 text-right">Faturamento</th><th className="px-3 py-2 text-right">Recebido líquido</th><th className="px-3 py-2 text-right">Pendente</th></tr></thead>\n            <tbody className="divide-y">\n              {laserDays?.map((event) => (\n                <tr key={event.date}>\n                  <td className="px-3 py-2 whitespace-nowrap">{formatDate(event.date + "T12:00:00Z")}</td>\n                  <td className="px-3 py-2 text-right tabular-nums">{event.appointmentCount}</td>\n                  <td className="px-3 py-2 text-right tabular-nums">{formatBRL(event.revenue)}</td>\n                  <td className="px-3 py-2 text-right tabular-nums">{formatBRL(event.netReceived)}</td>\n                  <td className="px-3 py-2 text-right tabular-nums">{formatBRL(event.outstanding)}</td>\n                </tr>\n              ))}\n              {laserDays?.length === 0 && <tr><td colSpan={5} className="px-3 py-3 text-muted-foreground">Nenhum Laser Day cadastrado.</td></tr>}\n            </tbody>\n          </table>\n        </div>\n      </section>\n      <div className="grid gap-6 md:grid-cols-2">
         <section className="rounded-2xl border bg-card p-5">
           <h2 className="mb-4 text-lg">Cadastro</h2>
           <div className="space-y-3">
