@@ -99,7 +99,7 @@ function AdminDash() {
           </table>
         </div>
       </section>
-      <div className="mt-8 grid gap-6 md:grid-cols-2>
+      <div className="mt-8 grid gap-6 md:grid-cols-2">
         <section>
           <h2 className="mb-3 text-xl">Locações vencendo (30 dias)</h2>
           <div className="divide-y rounded-2xl border bg-card">
