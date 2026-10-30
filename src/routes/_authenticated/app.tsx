@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { LayoutDashboard, CalendarDays, Users, Settings, Wallet } from "lucide-react";
+import { CalendarDays, LayoutDashboard, Users, Settings, Wallet } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { meQuery, useClinic } from "@/lib/session";
 
@@ -12,8 +12,8 @@ export const Route = createFileRoute("/_authenticated/app")({
 });
 
 const nav = [
-  { to: "/app", label: "Painel", icon: LayoutDashboard, exact: true },
   { to: "/app/agenda", label: "Agenda", icon: CalendarDays },
+  { to: "/app/visao-geral", label: "Visão geral", icon: LayoutDashboard },
   { to: "/app/clientes", label: "Clientes", icon: Users },
   { to: "/app/financeiro", label: "Financeiro", icon: Wallet },
   { to: "/app/configuracoes", label: "Ajustes", icon: Settings },
