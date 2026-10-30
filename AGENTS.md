@@ -23,3 +23,5 @@
 ## Implementation notes
 - Clinic home/navigation: `/app` redirects to `/app/agenda`; the previous dashboard is available at `/app/visao-geral`.
 - Admin operational-finance indicators are documented in `.lovable/plan/2026-10-30-admin-finance-and-agenda.md`; preserve the server-side admin guard and the distinction between received and expected values.
+
+- Admin Laser Day finance: preserve `adminLaserDayEvents` grouping by clinic-local appointment date and keep each event distinct; see `.lovable/plan/2026-10-30-admin-finance-and-agenda.md` for metric definitions and limitations.
