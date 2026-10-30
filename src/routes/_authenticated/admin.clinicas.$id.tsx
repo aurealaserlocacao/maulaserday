@@ -10,9 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { resendInvite, saveRental, setClinicAccess, updateClinicAdmin, adminStats } from "@/lib/admin.functions";
+import { resendInvite, saveRental, setClinicAccess, updateClinicAdmin, adminStats, adminFinanceSummary } from "@/lib/admin.functions";
 import { AUDIT_LABEL } from "@/lib/audit-labels";
-import { formatDate, formatDateTime } from "@/lib/format";
+import { formatBRL, formatDate, formatDateTime } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/clinicas/$id")({
   head: () => ({ meta: [{ title: "Clínica — Laser Day Pro" }, { name: "description", content: "Detalhes da clínica." }] }),
@@ -29,6 +29,7 @@ function ClinicAdmin() {
   const updateFn = useServerFn(updateClinicAdmin);
   const rentalFn = useServerFn(saveRental);
   const statsFn = useServerFn(adminStats);
+  const financeFn = useServerFn(adminFinanceSummary);
   const [confirmSuspend, setConfirmSuspend] = useState(false);
 
   const { data: c } = useQuery({ queryKey: ["admin-clinic", id], queryFn: async () => (await supabase.from("clinics").select("*").eq("id", id).maybeSingle()).data });
@@ -36,6 +37,7 @@ function ClinicAdmin() {
   const { data: members } = useQuery({ queryKey: ["admin-members", id], queryFn: async () => (await supabase.from("clinic_memberships").select("id, role, active, invited_at, user_id").eq("clinic_id", id)).data ?? [] });
   const { data: logs } = useQuery({ queryKey: ["admin-clinic-logs", id], queryFn: async () => (await supabase.from("audit_logs").select("id, action, created_at").eq("clinic_id", id).order("created_at", { ascending: false }).limit(15)).data ?? [] });
   const { data: stats } = useQuery({ queryKey: ["admin-stats"], queryFn: () => statsFn() });
+  const { data: finance } = useQuery({ queryKey: ["admin-clinic-finance", id], queryFn: () => financeFn({ data: { clinicId: id } }) });
 
   const [f, setF] = useState({ name: "", owner_name: "", phone: "", business_info: "", admin_notes: "" });
   useEffect(() => { if (c) setF({ name: c.name, owner_name: c.owner_name ?? "", phone: c.phone ?? "", business_info: c.business_info ?? "", admin_notes: c.admin_notes ?? "" }); }, [c]);
@@ -66,6 +68,32 @@ function ClinicAdmin() {
             : <Button size="sm" onClick={() => run(accessFn({ data: { clinicId: id, status: "active" } }), "Acesso reativado.")}>Reativar acesso</Button>}
         </div>
       </div>
+
+      <section className="mb-6 rounded-2xl border bg-card p-5">
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+          <h2 className="text-lg">Financeiro da clínica · últimos 30 dias</h2>
+          <p className="text-xs text-muted-foreground">{finance ? `${formatDate(finance.from + "T12:00:00Z")} a ${formatDate(finance.through + "T12:00:00Z")}` : "Carregando período…"}</p>
+        </div>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+          {[
+            { label: "Recebido bruto", value: finance?.total.grossReceipts },
+            { label: "Estornos", value: finance?.total.refunds },
+            { label: "Recebido líquido", value: finance?.total.netReceived },
+            { label: "Despesas", value: finance?.total.expenses },
+            { label: "Saldo operacional", value: finance?.total.operatingBalance },
+          ].map((item) => (
+            <div key={item.label} className="rounded-xl border p-3">
+              <p className="text-xs text-muted-foreground">{item.label}</p>
+              <p className="mt-1 font-display text-lg">{item.value == null ? "–" : formatBRL(item.value)}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 flex flex-wrap gap-4 text-sm">
+          <p><span className="text-muted-foreground">Estimativa a receber:</span> <strong>{finance ? formatBRL(finance.total.expectedOutstanding) : "–"}</strong></p>
+          <p><span className="text-muted-foreground">Agendamentos pendentes/parciais:</span> <strong>{finance?.total.unpaidAppointments ?? "–"}</strong></p>
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">Valores previstos são estimativas separadas dos recebimentos confirmados. Estornos reduzem o recebido líquido; despesas arquivadas não entram no saldo.</p>
+      </section>
 
       <div className="grid gap-6 md:grid-cols-2">
         <section className="rounded-2xl border bg-card p-5">
