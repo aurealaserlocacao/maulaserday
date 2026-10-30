@@ -17,3 +17,10 @@
 
 ## Orientação para futuras sessões Lovable
 Preserve essas rotas e definições de cálculo ao continuar o trabalho. Não substitua os indicadores por dados mockados, não confunda valores previstos com recebidos e mantenha a autorização administrativa no servidor.
+
+## Faturamento separado por Laser Day
+- A server function protegida `adminLaserDayEvents` agrupa atendimentos por clínica e pela data local de `appointments.starts_at`, usando o timezone cadastrado na clínica.
+- O painel geral do administrador e a página de detalhes da clínica mostram uma linha por Laser Day, sem somar datas diferentes numa única linha.
+- Faturamento registrado usa `final_amount` e, quando não existe, `expected_amount`; recebimento líquido é a soma de recebimentos menos estornos vinculados aos atendimentos do evento; pendente é a diferença positiva entre o faturamento registrado e o recebido líquido.
+- Um pagamento/estorno vinculado a um atendimento afeta o evento correspondente, sem mudar a data original do atendimento.
+- Nenhuma tabela ou migration nova foi necessária. O painel ainda depende de os atendimentos e valores serem registrados pela clínica; a visão ajuda a conferir, mas não prova por si só que nenhum atendimento foi omitido.
