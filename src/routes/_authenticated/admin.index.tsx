@@ -3,9 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
-import { adminStats } from "@/lib/admin.functions";
+import { adminStats, adminFinanceSummary } from "@/lib/admin.functions";
 import { AUDIT_LABEL } from "@/lib/audit-labels";
-import { formatDate, formatDateTime } from "@/lib/format";
+import { formatBRL, formatDate, formatDateTime } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   head: () => ({ meta: [{ title: "Painel administrativo — Laser Day Pro" }, { name: "description", content: "Visão geral das clínicas." }] }),
@@ -14,6 +14,8 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 
 function AdminDash() {
   const statsFn = useServerFn(adminStats);
+  const financeFn = useServerFn(adminFinanceSummary);
+  const { data: finance } = useQuery({ queryKey: ["admin-finance-summary"], queryFn: () => financeFn({ data: {} }) });
   const { data: s } = useQuery({ queryKey: ["admin-stats"], queryFn: () => statsFn() });
   const { data: expiring } = useQuery({
     queryKey: ["admin-expiring"],
@@ -35,6 +37,44 @@ function AdminDash() {
           <div key={c.l} className="rounded-2xl border bg-card p-4"><p className="text-xs text-muted-foreground">{c.l}</p><p className="font-display text-3xl">{c.v ?? "–"}</p></div>
         ))}
       </div>
+      <section className="mt-6">
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+          <h2 className="text-xl">Financeiro das clínicas</h2>
+          <p className="text-xs text-muted-foreground">{finance ? `${formatDate(finance.from + "T12:00:00Z")} a ${formatDate(finance.through + "T12:00:00Z")}` : "Últimos 30 dias"}</p>
+        </div>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+          {[
+            { label: "Recebido líquido", value: finance?.total.netReceived },
+            { label: "Estornos", value: finance?.total.refunds },
+            { label: "Despesas", value: finance?.total.expenses },
+            { label: "Saldo operacional", value: finance?.total.operatingBalance },
+            { label: "A receber (estimado)", value: finance?.total.expectedOutstanding },
+          ].map((item) => (
+            <div key={item.label} className="rounded-2xl border bg-card p-4">
+              <p className="text-xs text-muted-foreground">{item.label}</p>
+              <p className="mt-1 font-display text-xl">{item.value == null ? "–" : formatBRL(item.value)}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">O saldo operacional considera recebimentos menos estornos e despesas. “A receber” é uma estimativa de agendamentos recentes com status financeiro pendente ou parcial; não é receita recebida.</p>
+        <div className="mt-3 overflow-x-auto rounded-2xl border bg-card">
+          <table className="w-full text-sm">
+            <thead className="border-b bg-muted/40 text-left"><tr><th className="px-3 py-2">Clínica</th><th className="px-3 py-2 text-right">Recebido líquido</th><th className="px-3 py-2 text-right">Despesas</th><th className="px-3 py-2 text-right">Saldo</th><th className="px-3 py-2 text-right">A receber</th></tr></thead>
+            <tbody className="divide-y">
+              {finance?.clinics.map((clinic) => (
+                <tr key={clinic.id}>
+                  <td className="px-3 py-2"><Link to="/admin/clinicas/$id" params={{ id: clinic.id }} className="font-medium hover:underline">{clinic.name}</Link></td>
+                  <td className="px-3 py-2 text-right tabular-nums">{formatBRL(clinic.netReceived)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{formatBRL(clinic.expenses)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{formatBRL(clinic.operatingBalance)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{formatBRL(clinic.expectedOutstanding)}</td>
+                </tr>
+              ))}
+              {finance?.clinics.length === 0 && <tr><td colSpan={5} className="px-3 py-3 text-muted-foreground">Nenhuma clínica cadastrada.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </section>
       <div className="mt-8 grid gap-6 md:grid-cols-2">
         <section>
           <h2 className="mb-3 text-xl">Locações vencendo (30 dias)</h2>
